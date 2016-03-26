@@ -1,5 +1,7 @@
 package util;
 
+import elementi.Brano;
+import elementi.Playlist;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -11,6 +13,11 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
 /** Classe di utilita'*/
 public class WindowsManager {
@@ -100,33 +107,30 @@ public class WindowsManager {
         return field;
     }
 
-    /** Crea o sovrascrive un file nella directory specificata contenente un array di Object
-     * @param dir file path completo di file name in String
-     * @param array l'array di Object da scrivere nel file
-     * @throws IOException se avvengono errori di scrittura*/
-    public static void salvaArchivio(String dir, Object[] array) throws IOException{
+
+    public static void salvaArchivio(Map<Playlist, List<Brano>> playlistList) throws IOException{
         FileOutputStream f;
-        f = new FileOutputStream(dir);
+        System.out.println(System.getenv("APPDATA"));
+        f = new FileOutputStream(System.getenv("APPDATA") + "\\playlist.cd");
+
         ObjectOutputStream fOUT = new ObjectOutputStream(f);
 
-        fOUT.writeObject(array);
+        fOUT.writeObject(playlistList);
 
         f.flush();
         f.close();
     }
 
-    /** Apre un file dalla directory specificata
-     * @param dir file path completo di file name in String
-     * @return array di Object contenuto nel file
-     * @throws IOException se avvengono errori di lettura
-     * @throws ClassNotFoundException se il file non contiene un array di Object*/
-    public static Object[] apriArchivio(String dir) throws IOException,ClassNotFoundException{
-        Object[] res=null;
 
-        FileInputStream f=new FileInputStream(dir);
+    public static Map<Playlist, List<Brano>> apriArchivio() throws IOException,ClassNotFoundException{
+        Map<Playlist, List<Brano>> res;
+
+        Path path = Paths.get(System.getenv("APPDATA") + "\\playlist.cd");
+        if(!Files.exists(path)) throw new ClassNotFoundException();
+        FileInputStream f=new FileInputStream(System.getenv("APPDATA") + "\\playlist.cd");
         ObjectInputStream fIN=new ObjectInputStream(f);
 
-        res=(Object[])fIN.readObject();
+        res= (Map<Playlist, List<Brano>>) fIN.readObject();
         return res;
     }
 

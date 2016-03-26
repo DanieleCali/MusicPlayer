@@ -1,9 +1,11 @@
 package elementi;
 
+import java.io.Serializable;
+
 /**
  * Created by User on 22/03/2016.
  */
-public class Brano {
+public class Brano implements Serializable{
     private String nome;
     private String percorso;
     private String durata;

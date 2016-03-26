@@ -1,27 +1,24 @@
 package elementi;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by User on 22/03/2016.
  */
-public class Playlist {
+public class Playlist implements Serializable{
     private String nome;
-    private static int nBrani;
     private List<Brano> listaBrani;
-    private int codice;
 
-    public Playlist(String nome){
-        listaBrani = new ArrayList<>();
-        nBrani = 0;
+    public Playlist(String nome, List<Brano> listaBrani){
+        if (listaBrani == null)  this.listaBrani = new ArrayList<>();
+        else this.listaBrani = listaBrani;
         this.nome = nome;
-        this.codice = codice;
     }
 
     public void aggiungiBrano(Brano brano){
         listaBrani.add(brano);
-        nBrani++;
     }
 
     public String getNome() {
