@@ -59,6 +59,7 @@ public class Main extends Application {
     private static Button playPauseButton;
     private static ToggleButton shuffleBtn;
     private String durationMedia = "0:00";
+    private Text songLbl;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -153,7 +154,7 @@ public class Main extends Application {
         HBox boxSliderSong = WindowsManager.createHBox(2,0,Pos.CENTER,testoDurata, progressMusic);
 
         //box del nome della canzone e del boxSliderSong
-        Text songLbl = new Text("Canzone che sto ascoltando");
+        songLbl = new Text("");
         VBox sliderSong = WindowsManager.createVBox(3, 1, Pos.CENTER, songLbl, boxSliderSong);
 
         //tutto il box sopra della gui
@@ -174,14 +175,20 @@ public class Main extends Application {
                     mediaPlayer.stop();
                     mediaPlayer = new MediaPlayer(mediaCorrente);
                     mediaPlayer.play();
+                    setCanzone();
+
                 }
                 //se invece ho messo pausa e play sulla stessa canzone riprendo la canzone da dove l'ho stoppata
-                else mediaPlayer.play();
+                else {
+                    mediaPlayer.play();
+                    setCanzone();
+                }
             }
             //se il mediaplayer è null è la prima volta che spingo play quindi setto il media
             else{
                 mediaPlayer = new MediaPlayer(mediaCorrente);
                 mediaPlayer.play();
+                setCanzone();
             }
 
             //quando sto riproducendo la musica aggiorno lo slider
@@ -222,6 +229,14 @@ public class Main extends Application {
                 }
             });
         }
+    }
+
+    //setta la label della canzone che si sta ascoltando
+    private void setCanzone(){
+        String[] arraySplitted = mediaCorrente.getSource().split("/");
+        String titolo = arraySplitted[arraySplitted.length - 1].replace("%20", " ");
+        String titoloFinale = titolo.substring(0, titolo.length() - 4);
+        songLbl.setText(titoloFinale);
     }
 
     //aggiorna lo slider del progressMusic
