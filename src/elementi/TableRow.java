@@ -1,5 +1,6 @@
 package elementi;
 
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 /**
@@ -9,8 +10,10 @@ public class TableRow {
     private final SimpleStringProperty titolo;
     private final SimpleStringProperty durata;
     private final SimpleStringProperty percorso;
+    private final SimpleIntegerProperty codice;
 
-    public TableRow(String titolo, String durata, String percorso){
+    public TableRow(int codice, String titolo, String durata, String percorso){
+        this.codice = new SimpleIntegerProperty(codice);
         this.titolo = new SimpleStringProperty(titolo);
         this.durata = new SimpleStringProperty(durata);
         this.percorso = new SimpleStringProperty(percorso);
@@ -50,5 +53,17 @@ public class TableRow {
 
     public void setPercorso(String percorso) {
         this.percorso.set(percorso);
+    }
+
+    public int getCodice() {
+        return codice.get();
+    }
+
+    public SimpleIntegerProperty codiceProperty() {
+        return codice;
+    }
+
+    public void setCodice(int codice) {
+        this.codice.set(codice);
     }
 }

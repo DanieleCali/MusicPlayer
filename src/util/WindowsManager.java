@@ -4,6 +4,7 @@ import elementi.Brano;
 import elementi.Playlist;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -28,10 +29,10 @@ public class WindowsManager {
      * @param alignment l'allineamento oppure null
      * @param elementi gli elemnti che vanno all'interno del box
      * @return Il VBox con le caratteristiche desiderate*/
-    public static VBox createVBox(int spacing, int padding, Pos alignment, Text text, Parent... elementi){
+    public static VBox createVBox(int spacing, int padding, Pos alignment, Label Label, Node... elementi){
         VBox vb = new VBox();
-        if (text != null)
-            vb.getChildren().add(text);
+        if (Label != null)
+            vb.getChildren().add(Label);
 
         if (elementi!=null)
             vb.getChildren().addAll(elementi);
@@ -48,12 +49,12 @@ public class WindowsManager {
      * @param spacing lo sapacing oppure 0
      * @param padding il padding oppure 0
      * @param alignment l'allineamento oppure null
-     * @param text eventuale testo oppure null
+     * @param label eventuale testo oppure null
      *@param elementi gli elemnti che vanno all'interno del box  @return Il HBox con le caratteristiche desiderate*/
-    public static HBox createHBox(int spacing, int padding, Pos alignment, Text text, Parent... elementi){
+    public static HBox createHBox(int spacing, int padding, Pos alignment, Label label, Node... elementi){
         HBox hb = new HBox();
-        if (text != null)
-            hb.getChildren().add(text);
+        if (label != null)
+            hb.getChildren().add(label);
 
         if (elementi!=null)
             hb.getChildren().addAll(elementi);
@@ -110,7 +111,6 @@ public class WindowsManager {
 
     public static void salvaArchivio(Map<Playlist, List<Brano>> playlistList) throws IOException{
         FileOutputStream f;
-        System.out.println(System.getenv("APPDATA"));
         f = new FileOutputStream(System.getenv("APPDATA") + "\\playlist.cd");
 
         ObjectOutputStream fOUT = new ObjectOutputStream(f);
