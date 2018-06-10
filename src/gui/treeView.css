@@ -203,3 +203,15 @@
 {
     -fx-background-radius: 100;
 }
+
+.tool-bar {
+    -fx-background-color: #282828;
+}
+.split-pane {
+    -fx-background-color: #000000;
+    -fx-padding: 0.07em 0em 0.07em 0em;
+}
+
+#pane {
+    -fx-background-color: #282828;
+}

@@ -13,6 +13,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -36,15 +37,18 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
+import static java.lang.Math.atan;
 import static java.lang.Math.floor;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static javafx.application.Platform.runLater;
 
 public class Main extends Application {
-    private Stage stage;
+    private static Stage stage;
     private static final int BUTTON_WIDTH = 55;
     private static final int BUTTON_HEIGHT = 55;
     private ObservableList<TableRow> listaBrani = FXCollections.observableArrayList();
@@ -70,10 +74,18 @@ public class Main extends Application {
     private List<Integer> listaIndiciVisitati = new ArrayList<>();
     private static int codice = 1;
     private String maximizedMinimized = "minimized";
+    private Boolean resizebottom = false;
+    private double dx;
+    private double dy;
+    private double xOffset;
+    private double yOffset;
+    private String angolo = "";
+    private static SplitPane sp;
 
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start(Stage primaryStage) throws Exception {
         stage = primaryStage;
+        stage.getIcons().add(new Image("iconaProg.png"));
         Scene scene = new Scene(window(), 1520, 900);
         scene.setFill(Color.TRANSPARENT);
         stage.initStyle(StageStyle.TRANSPARENT);
@@ -89,29 +101,84 @@ public class Main extends Application {
     }
 
     //crea tutta la finestra
-    private Parent window(){
+    private Parent window() {
         BorderPane mainBP = new BorderPane();
         mainBP.setTop(controlMusicBox());
         mainBP.setCenter(treeTable());
         mainBP.setBottom(barraRicerca());
+        
+
+        mainBP.setOnMousePressed(event -> {
+
+            if (event.getX() > stage.getWidth() - 10
+                    && event.getX() < stage.getWidth() + 10
+                    && event.getY() > stage.getHeight() - 10
+                    && event.getY() < stage.getHeight() + 10) {
+                resizebottom = true;
+                angolo = "bassoDestra";
+                dx = stage.getWidth() - event.getX();
+                dy = stage.getHeight() - event.getY();
+
+            }
+//            else if(event.getX() < stage.getX() - 10
+//                    && event.getX() > stage.getX() + 10
+//                    && event.getY() < stage.getY() - 10
+//                    && event.getY() > stage.getY() + 10) {
+//                resizebottom = true;
+//                angolo = "altoSinistra";
+//
+//                dx = stage.getWidth() - event.getX();
+//                dy = stage.getHeight() + event.getY();
+//            }
+
+        });
+
+        mainBP.setOnMouseDragged(event -> {
+            if (resizebottom == true){
+                switch (angolo){
+                    case "bassoDestra":
+                        stage.setWidth(event.getX() + dx);
+                        stage.setHeight(event.getY() + dy);
+                        break;
+                    case "altoSinistra":
+                        stage.setWidth(event.getX() + dx);
+                        stage.setHeight(event.getY() + dy);
+                        break;
+                }
+            }
+
+        });
         return mainBP;
     }
 
 
     // crea il box per il controllo della musica
-    private VBox controlMusicBox(){
+    private VBox controlMusicBox() {
         //bottoni gui con listener
+        Image lyricsImg = new Image(getClass().getResourceAsStream("/lyrics.png"));
+        Button lyricsBtn = WindowsManager.createButton(null, BUTTON_WIDTH, BUTTON_HEIGHT, lyricsImg, false);
+        lyricsBtn.setOnAction(e -> {
+            try{
+                String[] percorso = mediaCorrente.getSource().replaceAll("%20", "").split("/");
+                String nomeFileIntero = percorso[percorso.length-1];
+                String nomeAnime = nomeFileIntero.split("-")[0];
+                String nomeSong = nomeFileIntero.split("-")[1];
+                if (nomeSong.substring(nomeSong.length()-4, nomeSong.length()).equals(".mp3")) nomeSong = nomeSong.substring(0, nomeSong.length()-4);
+                String nomeLink = "http://www.animelyrics.com/anime/" + nomeAnime + "/" + nomeSong + ".htm";
+                java.awt.Desktop.getDesktop().browse(java.net.URI.create(nomeLink.toLowerCase()));
+            }catch (Exception e2){}
+        });
+
         playPauseImg = new Image(getClass().getResourceAsStream("/play.png"));
         playPauseButton = WindowsManager.createButton(null, BUTTON_WIDTH, BUTTON_HEIGHT, playPauseImg, false);
         playPauseButton.setOnAction(e -> {
-            if(playPause.equals("pause")) {
+            if (playPause.equals("pause")) {
                 playMedia();
                 if (mediaPlayer != null) {
                     playPauseImg = new Image(getClass().getResourceAsStream("/pause.png"));
                     playPause = "play";
-                }
-                else{
-                    if(tableSongs.getSelectionModel().getSelectedItem() != null) {
+                } else {
+                    if (tableSongs.getSelectionModel().getSelectedItem() != null) {
                         i = tableSongs.getSelectionModel().getFocusedIndex();
                         setMedia();
                         playMedia();
@@ -121,19 +188,18 @@ public class Main extends Application {
                         }
                     }
                 }
+            } else if (mediaPlayer != null) {
+                mediaPlayer.pause();
+                playPauseImg = new Image(getClass().getResourceAsStream("/play.png"));
+                playPause = "pause";
             }
-            else if(mediaPlayer != null) {
-                    mediaPlayer.pause();
-                    playPauseImg = new Image(getClass().getResourceAsStream("/play.png"));
-                    playPause = "pause";
-                }
             playPauseButton.setGraphic(new ImageView(playPauseImg));
         });
 
         Image backwardImg = new Image(getClass().getResourceAsStream("/backward.png"));
         Button backwardButton = WindowsManager.createButton(null, BUTTON_WIDTH, BUTTON_HEIGHT, backwardImg, false);
         backwardButton.setOnAction(e -> {
-            if(mediaPlayer != null) {
+            if (mediaPlayer != null) {
                 i--;
                 if (i < 0) i = listaBrani.size() - 1;
                 setMedia();
@@ -144,7 +210,9 @@ public class Main extends Application {
 
         Image forwardImg = new Image(getClass().getResourceAsStream("/forward.png"));
         Button forwardButton = WindowsManager.createButton(null, BUTTON_WIDTH, BUTTON_HEIGHT, forwardImg, false);
-        forwardButton.setOnAction(e ->  {if (mediaPlayer != null) mediaPlayer.seek(mediaPlayer.getTotalDuration());});
+        forwardButton.setOnAction(e -> {
+            if (mediaPlayer != null) mediaPlayer.seek(mediaPlayer.getTotalDuration());
+        });
 
         Image shuffleImg = new Image(getClass().getResourceAsStream("/shuffle.png"));
         shuffleBtn = new ToggleButton(null, new ImageView(shuffleImg));
@@ -161,7 +229,7 @@ public class Main extends Application {
         progressMusic = new Slider();
         progressMusic.valueProperty().addListener(ov -> {
             if (progressMusic.isValueChanging()) {
-                if(duration!=null) {
+                if (duration != null) {
                     mediaPlayer.seek(duration.multiply(progressMusic.getValue() / 100.0));
                 }
                 updateValues(testoDurata);
@@ -169,17 +237,17 @@ public class Main extends Application {
         });
 
 
-        HBox boxSliderSong = WindowsManager.createHBox(2,0,Pos.CENTER,testoDurata, progressMusic);
+        HBox boxSliderSong = WindowsManager.createHBox(2, 0, Pos.CENTER, testoDurata, progressMusic);
 
         //box del nome della canzone e del boxSliderSong
         songLbl = new Label("");
         VBox sliderSong = WindowsManager.createVBox(3, 1, Pos.CENTER, songLbl, boxSliderSong);
 
         //tutto il box sopra della gui
-        HBox musicBox = WindowsManager.createHBox(5, 3, Pos.CENTER, null, playPauseButton, backwardButton, sliderSong, forwardButton, shuffleBtn, sliderVolumeBox);
-        musicBox.setPadding(new Insets(3,3,3,10));
+        HBox musicBox = WindowsManager.createHBox(5, 3, Pos.CENTER, null, lyricsBtn, playPauseButton, backwardButton, sliderSong, forwardButton, shuffleBtn, sliderVolumeBox);
+        musicBox.setPadding(new Insets(3, 3, 3, 10));
         HBox.setHgrow(progressMusic, Priority.ALWAYS);
-        HBox.setHgrow(sliderSong , Priority.ALWAYS);
+        HBox.setHgrow(sliderSong, Priority.ALWAYS);
         HBox.setHgrow(boxSliderSong, Priority.ALWAYS);
 
         Image reduceImg = new Image(getClass().getResourceAsStream("/reduce.png"));
@@ -193,12 +261,11 @@ public class Main extends Application {
         Button maximizeBtn = WindowsManager.createButton(null, 40, 20, maximizeImg, false);
         maximizeBtn.setId("bottoni");
         maximizeBtn.setOnAction(e -> {
-            if(maximizedMinimized.equals("minimized")){
+            if (maximizedMinimized.equals("minimized")) {
                 stage.setMaximized(true);
                 maximizeBtn.setGraphic(new ImageView(minimizeImg));
                 maximizedMinimized = "maximized";
-            }
-            else{
+            } else {
                 stage.setMaximized(false);
                 maximizeBtn.setGraphic(new ImageView(maximizeImg));
                 maximizedMinimized = "minimized";
@@ -212,20 +279,24 @@ public class Main extends Application {
         closeBtn.setOnAction(e -> {
             try {
                 Map<Playlist, List<Brano>> listPlaylist = new HashMap<>();
-                for(TreeItem<String> treeItem: mappaPlaylist.keySet())
+                for (TreeItem<String> treeItem : mappaPlaylist.keySet())
                     listPlaylist.put(mappaPlaylist.get(treeItem), mappaPlaylist.get(treeItem).getListaBrani());
                 WindowsManager.salvaArchivio(listPlaylist);
-            } catch (IOException e2) {}
+            } catch (IOException e2) {
+            }
             Platform.exit();
         });
 
         Pane pane1 = new Pane();
         HBox.setHgrow(pane1, Priority.ALWAYS);
-        Image spotifyImg = new Image(getClass().getResourceAsStream("/spotify.png"));
+        Image spotifyImg = new Image(getClass().getResourceAsStream("/icona.png"));
         Pane pane2 = new Pane();
         HBox.setHgrow(pane2, Priority.ALWAYS);
-        HBox closeMusicBox = WindowsManager.createHBox(5, 5, Pos.CENTER, null, new ImageView(spotifyImg), pane1,  new Label("Windows Cali' Player"),pane2, reduceBtn, maximizeBtn, closeBtn);
-        class Delta { double x, y; }
+        HBox closeMusicBox = WindowsManager.createHBox(5, 3, Pos.CENTER, null, new ImageView(spotifyImg), pane1, new Label("Windows Cali' Player"), pane2, reduceBtn, maximizeBtn, closeBtn);
+        closeMusicBox.setPadding(new Insets(3, 5, 0, 10));
+        class Delta {
+            double x, y;
+        }
         final Delta dragDelta = new Delta();
         closeMusicBox.setOnMousePressed(mouseEvent -> {
             dragDelta.x = stage.getX() - mouseEvent.getScreenX();
@@ -240,8 +311,8 @@ public class Main extends Application {
     }
 
     //riproduce la canzone giusta
-    private void playMedia(){
-        if(mediaCorrente != null) {
+    private void playMedia() {
+        if (mediaCorrente != null) {
             if (mediaPlayer != null) {
                 //se ho messo pausa e poi play su canzoni diverse allora setto il media
                 if (!mediaPlayer.getMedia().getSource().equals(mediaCorrente.getSource())) {
@@ -258,7 +329,7 @@ public class Main extends Application {
                 }
             }
             //se il mediaplayer è null è la prima volta che spingo play quindi setto il media
-            else{
+            else {
                 mediaPlayer = new MediaPlayer(mediaCorrente);
                 mediaPlayer.play();
                 setCanzone();
@@ -266,10 +337,10 @@ public class Main extends Application {
 
             //quando sto riproducendo la musica aggiorno lo slider
             mediaPlayer.setOnPlaying(() ->
-                mediaPlayer.currentTimeProperty().addListener(ov -> {
-                    duration = mediaPlayer.getMedia().getDuration();
-                    updateValues(testoDurata);
-                })
+                    mediaPlayer.currentTimeProperty().addListener(ov -> {
+                        duration = mediaPlayer.getMedia().getDuration();
+                        updateValues(testoDurata);
+                    })
             );
 
             //modificando lo slider del volume, cambia effettivament eil volume
@@ -277,18 +348,16 @@ public class Main extends Application {
 
             //alla fine di ogni canzone riproduco quella successiva sia nel caso in cui la voglio in ordine, che nel caso in cui la voglio casuale
             mediaPlayer.setOnEndOfMedia(() -> {
-                if(shuffleBtn.isSelected()){
+                if (shuffleBtn.isSelected()) {
                     if (listaIndiciVisitati.size() != listaBrani.size()) {
                         randomIndex();
                         listaIndiciVisitati.add(i);
-                    }
-                    else {
+                    } else {
                         listaIndiciVisitati.clear();
                         randomIndex();
                         listaIndiciVisitati.add(i);
                     }
-                }
-                else i++;
+                } else i++;
 
                 testoDurata.setText("00:00/00:00");
                 progressMusic.setValue(0);
@@ -297,8 +366,7 @@ public class Main extends Application {
                 try {
                     setMedia();
                     playMedia();
-                }
-                catch (IndexOutOfBoundsException ee){
+                } catch (IndexOutOfBoundsException ee) {
                     i = 0;
                     tableSongs.getSelectionModel().select(i);
                     setMedia();
@@ -308,7 +376,7 @@ public class Main extends Application {
         }
     }
 
-    private void randomIndex(){
+    private void randomIndex() {
         Random r = new Random();
         int random = i;
         while (random == i) {
@@ -320,7 +388,7 @@ public class Main extends Application {
     }
 
     //setta la label della canzone che si sta ascoltando
-    private void setCanzone(){
+    private void setCanzone() {
         String[] arraySplitted = mediaCorrente.getSource().split("/");
         String titolo = arraySplitted[arraySplitted.length - 1].replace("%20", " ");
         String titoloFinale = titolo.substring(0, titolo.length() - 4);
@@ -385,25 +453,28 @@ public class Main extends Application {
     }
 
     //setta il media in indice i
-    private void setMedia(){
+    private void setMedia() {
         tableRow = (TableRow) tableSongs.getItems().get(i);
         mediaCorrente = new Media(new File(tableRow.getPercorso()).toURI().toString());
     }
 
 
-    private HBox treeTable(){
+    private HBox treeTable() {
         tableSongs = new TableView();
+        sp = new SplitPane(tableSongs);
+        sp.setOrientation(Orientation.VERTICAL);
 
         //alla pressione su una riga della tabella setta il media selezionato
-        tableSongs.setRowFactory( tv -> {
+        tableSongs.setRowFactory(tv -> {
             javafx.scene.control.TableRow row = new javafx.scene.control.TableRow();
             row.setOnMouseClicked(event -> {
                 try {
                     i = tableSongs.getSelectionModel().getSelectedIndex();
                     setMedia();
-                }catch (NullPointerException | IndexOutOfBoundsException ex){}
+                } catch (NullPointerException | IndexOutOfBoundsException ex) {
+                }
 
-                if (event.getClickCount() == 2 && (! row.isEmpty()) ) {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
                     playMedia();
                     if (mediaPlayer != null) {
                         playPauseImg = new Image(getClass().getResourceAsStream("/pause.png"));
@@ -413,7 +484,8 @@ public class Main extends Application {
                     playPauseButton.setGraphic(new ImageView(playPauseImg));
                 }
             });
-            return row ;
+
+            return row;
         });
 
         playlistTreeItem = new TreeItem<>("Playlist");
@@ -422,12 +494,12 @@ public class Main extends Application {
         playList.setEditable(true);
         playList.setCellFactory(TextFieldTreeCell.forTreeView());
         playList.setOnEditCommit(event -> {
-            if (playlistCorrente != null){
+            if (playlistCorrente != null) {
                 mappaPlaylist.get(playlistCorrente).setNome(event.getNewValue());
             }
         });
 
-        playList.getSelectionModel().selectedItemProperty().addListener( new ChangeListener() {
+        playList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
 
             @Override
             public void changed(ObservableValue observable, Object oldValue,
@@ -438,14 +510,18 @@ public class Main extends Application {
                     listaBrani.clear();
                     codice = 1;
                     for (Brano b : playlist.getListaBrani())
-                        addRow(b.getNome(), b.getDurata(), b.getPercorso());
+                        addRow(b.getNome(), b.getDurata(), b.getPercorso(), b);
                 }
             }
         });
 
 
-
         tableSongs.prefWidthProperty().bind(stage.widthProperty());
+
+        TableColumn delete = new TableColumn("  ");
+        delete.setCellValueFactory(
+                new PropertyValueFactory<TableRow, String>("delete"));
+        delete.prefWidthProperty().bind(tableSongs.widthProperty().multiply(0.05));
 
         TableColumn codice = new TableColumn("N.");
         codice.setCellValueFactory(
@@ -465,8 +541,11 @@ public class Main extends Application {
         TableColumn percorso = new TableColumn("Percorso");
         percorso.setCellValueFactory(
                 new PropertyValueFactory<TableRow, String>("percorso"));
-        percorso.prefWidthProperty().bind(tableSongs.widthProperty().multiply(0.55));
-        tableSongs.getColumns().addAll(codice, titolo, durata, percorso);
+        percorso.prefWidthProperty().bind(tableSongs.widthProperty().multiply(0.50));
+
+
+
+        tableSongs.getColumns().addAll(delete, codice, titolo, durata, percorso);
 
         //drag and drop dei file
         tableSongs.setOnDragOver(event -> {
@@ -485,22 +564,23 @@ public class Main extends Application {
             if (db.hasFiles()) {
                 success = true;
                 String estenzione = null;
-                for (File file:db.getFiles()) {
+                for (File file : db.getFiles()) {
                     final String name = file.getName();
                     final String filePath = file.getAbsolutePath();
                     estenzione = name.substring(name.length() - 3);
-                    if(estenzione.equals("mp3") || estenzione.equals("m4a") || estenzione.equals("mp4") || estenzione.equals("wav") || estenzione.equals("flv")){
-                        Media media = new Media(new File(filePath).toURI().toString());
-                        MediaPlayer mp = new MediaPlayer(media);
-                        mp.setOnReady(() ->  {
-                            durationMedia = "" + Math.round(media.getDuration().toMinutes()*100.0) / 100.0;
-                            Brano brano = new Brano(name, filePath, durationMedia);
-                            Playlist playlist = mappaPlaylist.get(playlistCorrente);
-                            playlist.aggiungiBrano(brano);
-                            addRow(name, durationMedia, filePath);
-                        });
+                    Media media = new Media(new File(filePath).toURI().toString());
+                    MediaPlayer mp = new MediaPlayer(media);
+                    mp.setOnReady(() -> {
+                        durationMedia = "" + Math.round(media.getDuration().toMinutes() * 100.0) / 100.0;
+                        Brano brano = new Brano(name, filePath, durationMedia);
+                        Playlist playlist = mappaPlaylist.get(playlistCorrente);
+                        playlist.aggiungiBrano(brano);
+                        addRow(name, durationMedia, filePath, brano);
+                    });
 
-                    }
+
+
+
                 }
             }
             event.setDropCompleted(success);
@@ -513,16 +593,18 @@ public class Main extends Application {
         VBox toolTree = WindowsManager.createVBox(0, 0, null, null, playList);
         VBox.setVgrow(playList, Priority.ALWAYS);
         toolTree.prefWidthProperty().bind(stage.widthProperty().multiply(0.4));
-        HBox treeTableBox = WindowsManager.createHBox(0, 0, null, null, toolTree, tableSongs);
+        HBox treeTableBox = WindowsManager.createHBox(0, 0, null, null, toolTree, sp);
         return treeTableBox;
     }
 
     //quando si apre il programma vengono fillati i campi delle playlist salvate e dei brani salvati
-    private void fillaCampi(){
+    Path songPath = Paths.get("E:\\01 - Daniele\\Musica\\");
+    private void fillaCampi() {
+
         try {
             Map<Playlist, List<Brano>> playlistMap = WindowsManager.apriArchivio();
             Iterator iterator = playlistMap.keySet().iterator();
-            while(iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Playlist playlist = (Playlist) iterator.next();
                 createPlaylist(playlist.getNome(), playlistMap.get(playlist));
             }
@@ -530,25 +612,35 @@ public class Main extends Application {
             playList.getSelectionModel().select(1);
             tableSongs.getSelectionModel().select(0);
 
-        } catch (IOException | ClassNotFoundException e) {}
+
+        } catch (IOException | ClassNotFoundException e) {
+        }
     }
 
     //aggiunge una riga alla tabella
-    private void addRow(String titolo, String duration, String percorso){
+    private void addRow(String titolo, String duration, String percorso, Brano b) {
         boolean presente = false;
-        for(TableRow tr: listaBrani){
-            if(tr.getTitolo().equals(titolo))
+        for (TableRow tr : listaBrani) {
+            if (tr.getTitolo().equals(titolo))
                 presente = true;
         }
-        if(!presente) {
-            TableRow t = new TableRow(codice, titolo, duration, percorso);
+        if (!presente) {
+            Button delete = new Button("X");
+            delete.setId("delete");
+
+
+            TableRow t = new TableRow(delete, codice, titolo, duration, percorso);
+            delete.setOnAction(e -> {
+                mappaPlaylist.get(playlistCorrente).getListaBrani().remove(b);
+                listaBrani.remove(t);
+            });
             listaBrani.add(t);
             codice++;
         }
     }
 
     //barra di ricerca con aggiungi e rimuovi playlist
-    private HBox barraRicerca(){
+    private HBox barraRicerca() {
         //bottoni
         Image addImg = new Image(getClass().getResourceAsStream("/add.png"));
         Button addPlaylistBtn = WindowsManager.createButton(null, 50, 20, addImg, false);
@@ -564,13 +656,12 @@ public class Main extends Application {
             else {
                 ObservableList<TableRow> obs = FXCollections.observableArrayList();
                 new Thread(() -> {
-                    for(TableRow s: listaBrani){
+                    for (TableRow s : listaBrani) {
                         if (s.getTitolo().toLowerCase().contains(newValue.toLowerCase()))
                             obs.add(s);
                     }
                 }).start();
                 tableSongs.setItems(obs);
-                System.out.println("textfield changed from " + oldValue + " to " + newValue);
             }
         });
 
@@ -582,7 +673,7 @@ public class Main extends Application {
     }
 
     //crea una playlist
-    private void createPlaylist(String nome, List<Brano> listaBrani){
+    private void createPlaylist(String nome, List<Brano> listaBrani) {
         Playlist itemPlayList = new Playlist(nome, listaBrani);
         TreeItem<String> treeItem = new TreeItem<>(nome);
         mappaPlaylist.put(treeItem, itemPlayList);
@@ -592,19 +683,21 @@ public class Main extends Application {
     }
 
     //rimuove una playlist con tutti i suoi dati
-    private void removePlaylist(){
-        TreeItem<String> itemSelected =  playList.getSelectionModel().getSelectedItem();
-        if(itemSelected != null) {
+    private void removePlaylist() {
+        TreeItem<String> itemSelected = playList.getSelectionModel().getSelectedItem();
+        if (itemSelected != null) {
             mappaPlaylist.remove(itemSelected);
             playlistTreeItem.getChildren().remove(itemSelected);
             TreeItem<String> newSelected = playList.getSelectionModel().getSelectedItem();
             try {
                 List<Brano> playlist = mappaPlaylist.get(newSelected).getListaBrani();
                 for (Brano brano : playlist)
-                    addRow(brano.getNome(), brano.getDurata(), brano.getPercorso());
-            }catch (NullPointerException e){
+                    addRow(brano.getNome(), brano.getDurata(), brano.getPercorso(), brano);
+            } catch (NullPointerException e) {
                 listaBrani.clear();
             }
         }
     }
+
 }
+
